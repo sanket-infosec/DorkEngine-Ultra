@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Hacker Dork Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg0:#020302; --bg1:#051009; --neon:#00ff7f; --neon2:#34d399; --muted:#7f9a86; --glass:rgba(255,255,255,0.02);
+    --accent-shadow: 0 0 18px rgba(52,211,153,0.06), inset 0 0 30px rgba(0,0,0,0.6);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:radial-gradient(ellipse at top left,#041114 0%,#010202 45%),linear-gradient(180deg,#02120d 0%, #000202 100%);font-family:'JetBrains Mono', monospace;color:var(--neon);-webkit-font-smoothing:antialiased}
+  /* matrix background */
+  #matrix {
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:transparent;
+  }
+
+  .app {
+    position:relative; z-index:2; max-width:1180px; margin:28px auto; padding:18px;
+    border-radius:10px; min-height:84vh;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+    background: linear-gradient(180deg, rgba(5,10,8,0.4), rgba(0,0,0,0.45));
+    border-left:1px solid rgba(0,255,127,0.04);
+    border-top:1px solid rgba(0,255,127,0.02);
+    backdrop-filter: blur(6px);
+  }
+
+  header{display:flex;align-items:center;gap:16px;margin-bottom:14px}
+  .logo {
+    width:68px;height:68px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(120deg, rgba(0,255,127,0.06), rgba(52,211,153,0.03));
+    border:1px solid rgba(0,255,127,0.08); box-shadow: var(--accent-shadow);
+    font-weight:800;font-size:18px;color:#00190c;
+  }
+  h1{margin:0;font-size:20px;color:var(--neon)}
+  .sub{color:var(--muted);font-size:13px;margin-top:4px}
+
+  .topbar{display:flex;gap:12px;align-items:center;margin-top:12px}
+  input[type=text], select {
+    background:transparent;border:1px solid rgba(0,255,127,0.06);color:var(--neon);padding:10px 12px;border-radius:6px;outline:none;
+    min-width:200px;font-family:inherit;
+  }
+  input[type=text]::placeholder{color:#0f2a1f}
+  .btn {
+    background:linear-gradient(90deg,var(--neon),var(--neon2));border:0;color:#02110a;padding:10px 12px;border-radius:6px;cursor:pointer;font-weight:700;
+    box-shadow:0 6px 18px rgba(2,20,10,0.45);
+  }
+  .btn-ghost{background:transparent;border:1px solid rgba(0,255,127,0.06);color:var(--muted);padding:8px 10px;border-radius:6px}
+  .engines{display:flex;gap:8px;align-items:center}
+  .engine{padding:8px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.02);background:rgba(0,0,0,0.12);cursor:pointer;color:var(--muted)}
+
+  .layout{display:grid;grid-template-columns: 1fr 420px; gap:16px;margin-top:16px}
+  .panel{background:rgba(0,0,0,0.25);padding:14px;border-radius:8px;border:1px solid rgba(0,255,127,0.03)}
+  .left{min-height:60vh}
+  .right{min-height:60vh}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .tile{
+    background:linear-gradient(180deg,rgba(0,0,0,0.15),rgba(0,0,0,0.06));
+    padding:12px;border-radius:8px;border:1px solid rgba(0,255,127,0.03);position:relative;
+    transition:transform .14s ease, box-shadow .14s ease; cursor:default;
+  }
+  .tile:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,0.7)}
+  .tlabel{font-weight:700;font-size:14px;color:var(--neon)}
+  .tpat{font-size:12px;color:var(--muted);margin-top:6px}
+
+  .tile .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .small-btn{background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.03);padding:8px;border-radius:6px;color:var(--neon);cursor:pointer}
+  .trash, .edit {position:absolute;top:8px;right:8px;background:transparent;border:0;color:#ff8b8b;cursor:pointer;padding:6px;border-radius:6px}
+  .edit{right:40px;color:#ffd66b}
+
+  /* console box */
+  .console {height:260px; overflow:auto; background:rgba(0,0,0,0.25); border-radius:6px; padding:12px; font-size:13px; color:var(--neon); border:1px solid rgba(0,255,127,0.03)}
+  .console .line{margin-bottom:8px; color:var(--muted); font-size:13px}
+  .muted{color:var(--muted);font-size:13px}
+
+  .add-row{display:flex;gap:8px;margin-top:12px}
+  .add-row input{flex:1}
+  .footer{margin-top:12px;color:var(--muted);font-size:13px}
+
+  /* responsive */
+  @media (max-width:980px){
+    .layout{grid-template-columns:1fr; }
+    .right{order:2}
+  }
+
+  /* subtle scanline */
+  .scanline:before{
+    content:"";position:fixed;pointer-events:none;inset:0;background-image: linear-gradient(rgba(0,0,0,0.02) 50%, transparent 50%);background-size:100% 3px;mix-blend-mode:overlay;z-index:1;
+  }
+</style>
+</head>
+<body class="scanline">
+<canvas id="matrix"></canvas>
+
+<div class="app">
+  <header>
+    <div class="logo">H4CK</div>
+    <div>
+      <h1>Hacker Dork Dashboard</h1>
+      <div class="sub">Terminal-style dork builder • add/edit/delete custom dorks • engines: Google/Bing/Duck/Shodan</div>
+    </div>
+  </header>
+
+  <div class="topbar">
+    <input id="target" placeholder="target.com  (eg: example.com)" />
+    <select id="dorkSelect"></select>
+    <button id="searchBtn" class="btn">LAUNCH</button>
+    <div style="margin-left:6px" class="engines">
+      <button id="googleBtn" class="engine">Google</button>
+      <button id="bingBtn" class="engine">Bing</button>
+      <button id="duckBtn" class="engine">Duck</button>
+      <button id="shodanBtn" class="engine">Shodan</button>
+    </div>
+    <button id="copyQuery" class="btn-ghost">COPY</button>
+  </div>
+
+  <div class="layout">
+    <div class="left panel">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700;color:var(--neon)">Dork List</div>
+        <div class="muted">Default dorks protected</div>
+      </div>
+
+      <div class="grid" id="dorkGrid" style="margin-top:12px"></div>
+
+      <div class="add-row" style="margin-top:12px">
+        <input id="customDork" placeholder='Add custom dork (use {target})' />
+        <input id="customLabel" placeholder='Label (optional)' style="width:200px" />
+        <button id="addCustom" class="btn">ADD</button>
+      </div>
+
+      <div class="footer">
+        <div class="muted">Tip: use <code>{target}</code> anywhere in the pattern. Example: <span style="color:var(--neon)">site:{target} inurl:.php</span></div>
+      </div>
+    </div>
+
+    <div class="right panel">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700;color:var(--neon)">Console</div>
+        <div class="muted">logs & previews</div>
+      </div>
+
+      <div class="console" id="console">
+        <div class="line">> console started. ready.</div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+        <button id="resetCustom" class="btn-ghost">RESET CUSTOM</button>
+        <button id="exportBtn" class="btn-ghost">EXPORT</button>
+        <button id="importBtn" class="btn-ghost">IMPORT</button>
+      </div>
+
+      <div style="margin-top:12px" class="muted">
+        Use only on assets you own or where you have explicit written permission.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Matrix rain effect */
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+let width, height, cols, fontSize = 14, drops;
+function resize(){
+  width = canvas.width = innerWidth;
+  height = canvas.height = innerHeight;
+  cols = Math.floor(width / fontSize);
+  drops = new Array(cols).fill(1);
+}
+window.addEventListener('resize', resize);
+resize();
+const letters = "アイウエオカキクケコサシスセソタチツテト0123456789abcdef0123456789";
+function draw(){
+  ctx.fillStyle = "rgba(1,2,1,0.12)";
+  ctx.fillRect(0,0,width,height);
+  ctx.fillStyle = "rgba(0,255,127,0.9)";
+  ctx.font = fontSize + "px JetBrains Mono";
+  for(let i=0;i<drops.length;i++){
+    const text = letters.charAt(Math.floor(Math.random()*letters.length));
+    ctx.fillText(text, i*fontSize, drops[i]*fontSize);
+    if(drops[i]*fontSize > height && Math.random() > 0.975) drops[i]=0;
+    drops[i]++;
+  }
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+
+/* Dorking functionality (same pattern as before with edit/delete) */
+const defaultDorks = [
+  {label:"PHP pages", pattern:"site:{target} inurl:.php"},
+  {label:"Login / Admin", pattern:"site:{target} inurl:login OR inurl:admin OR intitle:Login"},
+  {label:"Index of / Directory listing", pattern:"site:{target} intitle:\"index of\""},
+  {label:"Exposed .env / config", pattern:"site:{target} ext:env OR ext:ini OR ext:conf OR ext:json intext:DB_PASSWORD"},
+  {label:"Backup / DB dumps", pattern:"site:{target} (ext:sql OR ext:bak OR ext:zip OR ext:tar)"},
+  {label:"Exposed creds / key material", pattern:"site:{target} (password OR passwd OR aws_access_key OR secret)"},
+  {label:"Sensitive docs", pattern:"site:{target} (ext:pdf OR ext:doc OR ext:docx OR ext:xls) \"password\" OR \"confidential\""},
+  {label:"Open ports / devices (Shodan)", pattern:"{target}"},
+  {label:"SQLi-prone pages (inurl hints)", pattern:"site:{target} inurl:id= OR inurl:product.php OR inurl:item.php"},
+  {label:"Reflected XSS hints", pattern:"site:{target} inurl:search OR inurl:q OR inurl:query intext:\"<script>\""},
+  {label:"Public cloud buckets / s3", pattern:"site:{target} \"s3.amazonaws.com\" OR \"storage.googleapis.com\" OR \"blob.core.windows.net\""},
+  {label:"Error messages / stack traces", pattern:"site:{target} \"Stack trace\" OR \"Exception in\" OR \"Fatal error\""},
+];
+const LS_KEY = 'hacker_dorks_v1';
+
+function getCustom(){ try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]')}catch(e){return[]} }
+function setCustom(arr){ localStorage.setItem(LS_KEY, JSON.stringify(arr)) }
+function buildDorks(){ return [...defaultDorks, ...getCustom()] }
+
+function renderGrid(){
+  const grid = document.getElementById('dorkGrid');
+  grid.innerHTML = '';
+  buildDorks().forEach((d, idx)=>{
+    const tile = document.createElement('div'); tile.className='tile';
+    tile.innerHTML = `
+      <div class="tlabel">${escapeHtml(d.label||d.pattern)}</div>
+      <div class="tpat">${escapeHtml(d.pattern)}</div>
+      <div class="actions">
+        <button class="small-btn" onclick="runPreview(${idx})">Preview</button>
+        <button class="small-btn" onclick="runSearch(${idx})">Search</button>
+        <button class="small-btn" onclick="copyPattern(${idx})">Copy</button>
+      </div>
+    `;
+    // <-- MINIMAL CHANGE: always add an edit button for every dork -->
+    const edit = document.createElement('button'); edit.className='edit'; edit.title='Edit dork'; edit.innerHTML='Edit';
+    edit.addEventListener('click', (e)=>{ e.stopPropagation(); editCustom(idx); });
+    tile.appendChild(edit);
+
+    if(idx >= defaultDorks.length){
+      const trash = document.createElement('button'); trash.className='trash'; trash.title='Delete custom dork'; trash.innerHTML='🗑';
+      trash.addEventListener('click', (e)=>{ e.stopPropagation(); deleteCustomAtIndex(idx); });
+      tile.appendChild(trash);
+    }
+    grid.appendChild(tile);
+  });
+  renderSelect();
+}
+
+/* render select dropdown */
+function renderSelect(){
+  const sel = document.getElementById('dorkSelect');
+  sel.innerHTML='';
+  buildDorks().forEach((d,i)=>{
+    const opt = document.createElement('option'); opt.value=i; opt.textContent = d.label || d.pattern; sel.appendChild(opt);
+  });
+}
+
+/* helper */
+function formatPattern(pattern, target){
+  if(!target) return '';
+  return pattern.replace(/\{target\}/g, target.trim());
+}
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+/* engines */
+function engineUrl(engine, q){
+  const enc = encodeURIComponent(q);
+  if(engine === 'google') return `https://www.google.com/search?q=${enc}`;
+  if(engine === 'bing') return `https://www.bing.com/search?q=${enc}`;
+  if(engine === 'duck') return `https://duckduckgo.com/?q=${enc}`;
+  if(engine === 'shodan') return `https://www.shodan.io/search?query=${enc}`;
+  return '';
+}
+
+/* console log */
+function clog(msg){ const c = document.getElementById('console'); const line = document.createElement('div'); line.className='line'; line.textContent = '> ' + msg; c.appendChild(line); c.scrollTop = c.scrollHeight; }
+
+/* actions */
+function runSearch(idx){
+  const target = document.getElementById('target').value.trim();
+  if(!target){ alert('Enter a target first'); return; }
+  const d = buildDorks()[idx]; const q = formatPattern(d.pattern, target);
+  clog(`launch: ${q}`);
+  window.open(engineUrl('google', q), '_blank');
+}
+function runPreview(idx){
+  const target = document.getElementById('target').value.trim();
+  const d = buildDorks()[idx]; const q = target ? formatPattern(d.pattern, target) : d.pattern;
+  clog('preview -> ' + q);
+  alert('Query:\n' + q);
+}
+function copyPattern(idx){
+  const target = document.getElementById('target').value.trim();
+  const pat = buildDorks()[idx].pattern; const q = target ? formatPattern(pat, target) : pat;
+  navigator.clipboard?.writeText(q).then(()=>clog('copied to clipboard')).catch(()=>prompt('Copy this query', q));
+}
+
+/* add custom */
+document.getElementById('addCustom').addEventListener('click', ()=>{
+  const p = document.getElementById('customDork').value.trim();
+  if(!p){ alert('Enter a dork pattern (use {target})'); return; }
+  const label = document.getElementById('customLabel').value.trim() || p;
+  const list = getCustom(); list.push({label, pattern:p}); setCustom(list);
+  document.getElementById('customDork').value=''; document.getElementById('customLabel').value='';
+  renderGrid(); clog(`custom added: ${label}`);
+});
+
+/* reset */
+document.getElementById('resetCustom').addEventListener('click', ()=>{
+  if(!confirm('Remove all custom dorks?')) return;
+  setCustom([]); renderGrid(); clog('custom list reset');
+});
+
+/* copy query button */
+document.getElementById('copyQuery').addEventListener('click', ()=>{
+  const idx = parseInt(document.getElementById('dorkSelect').value,10);
+  const target = document.getElementById('target').value.trim();
+  const d = buildDorks()[idx]; const q = formatPattern(d.pattern, target);
+  navigator.clipboard?.writeText(q).then(()=>clog('query copied')).catch(()=>prompt('Copy query', q));
+});
+
+/* engine buttons */
+document.getElementById('googleBtn').addEventListener('click', ()=>{ engineClick('google') });
+document.getElementById('bingBtn').addEventListener('click', ()=>{ engineClick('bing') });
+document.getElementById('duckBtn').addEventListener('click', ()=>{ engineClick('duck') });
+document.getElementById('shodanBtn').addEventListener('click', ()=>{ engineClick('shodan') });
+
+function engineClick(engine){
+  const idx = parseInt(document.getElementById('dorkSelect').value,10);
+  const target = document.getElementById('target').value.trim();
+  const d = buildDorks()[idx]; const q = formatPattern(d.pattern, target);
+  if(!q){ alert('Enter target first'); return; }
+  clog(`${engine} -> ${q}`);
+  window.open(engineUrl(engine, q), '_blank');
+}
+
+/* search btn */
+document.getElementById('searchBtn').addEventListener('click', ()=>{
+  const idx = parseInt(document.getElementById('dorkSelect').value,10);
+  runSearch(idx);
+});
+
+/* edit & delete custom */
+function deleteCustomAtIndex(combinedIndex){
+  const customStart = defaultDorks.length;
+  if(combinedIndex < customStart){ alert('Cannot delete default dorks'); return; }
+  const customList = getCustom(); const customIdx = combinedIndex - customStart;
+  if(!confirm(`Delete custom dork: "${customList[customIdx].label}" ?`)) return;
+  customList.splice(customIdx,1); setCustom(customList); renderGrid(); clog('custom deleted');
+}
+function editCustom(combinedIndex){
+  /* MINIMAL CHANGE: allow editing any dork by editing the arrays in-place.
+     For defaults, we copy default list to a combined list and save edits into the custom list
+     so that edits persist in localStorage without modifying built-in array in code. */
+  const customStart = defaultDorks.length;
+  const customList = getCustom();
+
+  // Build combined list reference
+  const combined = [...defaultDorks, ...customList];
+
+  if(combinedIndex < 0 || combinedIndex >= combined.length) return;
+
+  const item = combined[combinedIndex];
+
+  const newLabel = prompt('Edit label', item.label) || item.label;
+  const newPattern = prompt('Edit pattern (use {target})', item.pattern) || item.pattern;
+
+  // If the edited item is a default dork, store the modified entry into the custom list
+  if(combinedIndex < customStart){
+    // replace or append in the custom list at the corresponding position so indexes stay consistent
+    // We'll append the edited version to the start of the custom list to ensure it appears at the same combined index
+    // Approach: insert the edited default override at the front of customList so combined index maps correctly.
+    // More conservative approach: place edited override at same position (customList index = combinedIndex - customStart)
+    // but that may create holes. We'll ensure customList[combinedIndex - customStart] exists by inserting/updating.
+    const customIdx = combinedIndex - customStart;
+    // ensure array length
+    while(customList.length <= customIdx) customList.push({label:'', pattern:''});
+    customList[customIdx] = {label:newLabel, pattern:newPattern};
+  }else{
+    // editing an existing custom dork
+    const customIdx = combinedIndex - customStart;
+    customList[customIdx] = {label:newLabel, pattern:newPattern};
+  }
+
+  setCustom(customList);
+  renderGrid();
+  clog('custom edited');
+}
+
+/* export/import */
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const data = getCustom(); const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='dorks_export.json'; a.click(); URL.revokeObjectURL(url); clog('exported custom dorks');
+});
+document.getElementById('importBtn').addEventListener('click', ()=>{
+  const ta = document.createElement('input'); ta.type='file'; ta.accept='.json';
+  ta.onchange = e => {
+    const f = e.target.files[0]; if(!f) return;
+    const reader = new FileReader(); reader.onload = ev => {
+      try{
+        const arr = JSON.parse(ev.target.result);
+        if(!Array.isArray(arr)) throw 'Invalid';
+        setCustom(arr); renderGrid(); clog('imported custom dorks');
+      }catch(err){ alert('Invalid JSON'); }
+    }; reader.readAsText(f);
+  }; ta.click();
+});
+
+/* utilities exposed for inline usage */
+window.runSearch = runSearch; window.runPreview = runPreview; window.copyPattern = copyPattern;
+window.deleteCustomAtIndex = deleteCustomAtIndex; window.editCustom = editCustom;
+
+/* initial render */
+renderGrid();
+
+/* helper: safely attempt to set select to 0 if empty */
+document.addEventListener('DOMContentLoaded', ()=>{ if(document.getElementById('dorkSelect').options.length) document.getElementById('dorkSelect').selectedIndex = 0; });
+</script>
+</body>
+</html>
